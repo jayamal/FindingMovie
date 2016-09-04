@@ -37,3 +37,4 @@ Execute bellow command to compile and package content in to exetable JAR file.
 mvn clean compile assembly:single
 ```
 ## License
+GNU AGPLv3
