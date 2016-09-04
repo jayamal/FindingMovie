@@ -1,31 +1,39 @@
-## Finding Moview
+## Finding Movie
 
-At the top of the file there should be a short introduction and/ or overview that explains **what** the project is. This description should match descriptions added for package managers (Gemspec, package.json, etc.)
+It is difficult find a good movie when your friend give you gigabytes of his movie collection to you. Movie names are also usually given like **Money.Monster.2016.BRRip.XviD-ETRG** and are difficult process and find the actual name. What Finding Movie does is it provides API to recursively search through your entire movie library and clean the names and find IMDB infor using that cleaned name. Finding Movie either can be use as a API or standalone appliation using provided UI.
 
-## Code Example
+## Using API
 
-Show what the library does as concisely as possible, developers should be able to figure out **how** your project solves their problem by looking at the code example. Make sure the API you are showing off is obvious, and that your code is short and concise.
-
-## Motivation
-
-A short description of the motivation behind the creation and maintenance of the project. This should explain **why** the project exists.
+final FindingMovieUI findingMovieUI = new FindingMovieUI();
+findingMovieUI.init();
+//find
+Finder finder = new Finder(new Finder.ProgressNotifier() {
+  public void notifyProgress(File file, Map<String, String> infoMap, float progress) {
+      System.out.println("Progress : " + progress + " : " + infoMap.get("Title") + " : " + infoMap.get("imdbRating"));
+      if(infoMap.get("Response").equals("True")) {
+          findingMovieUI.getModel().addRow(new Object[]{
+                  infoMap.get("imdbRating"),
+                  //RestUtils.getImageIcon(infoMap.get("Poster")),
+                  infoMap.get("Title"),
+                  infoMap.get("Year"),
+                  infoMap.get("Rated"),
+                  infoMap.get("Released"),
+                  infoMap.get("Runtime"),
+                  infoMap.get("Genre")
+          });
+      }
+      findingMovieUI.getProgressBar().setValue((int)progress);
+  }
+});
+Map<File, Map<String, String>> result = finder.getMovieInfo("/Volumes/JayamalHD/Films/");
+for(Map.Entry<File, Map<String, String>> movieEntry : result.entrySet()){
+      System.out.println(movieEntry.getKey().getName() + " : " + movieEntry.getValue().get("Title") + " : " + movieEntry.getValue().get("imdbRating"));
+}
 
 ## Installation
 
-Provide code examples and explanations of how to get the project.
+Execute bellow command to compile and package content in to exetable JAR file.
 
-## API Reference
-
-Depending on the size of the project, if it is small and simple enough the reference docs can be added to the README. For medium size to larger projects it is important to at least provide a link to where the API reference docs live.
-
-## Tests
-
-Describe and show how to run the tests with code examples.
-
-## Contributors
-
-Let people know how they can dive into the project, include important links to things like issue trackers, irc, twitter accounts if applicable.
+mvn clean compile assembly:single
 
 ## License
-
-A short snippet describing the license (MIT, Apache, etc.)
