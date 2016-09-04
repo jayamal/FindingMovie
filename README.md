@@ -3,7 +3,7 @@
 It is difficult find a good movie when your friend give you gigabytes of his movie collection to you. Movie names are also usually given like **Money.Monster.2016.BRRip.XviD-ETRG** and are difficult process and find the actual name. What Finding Movie does is it provides API to recursively search through your entire movie library and clean the names and find IMDB infor using that cleaned name. Finding Movie either can be use as a API or standalone appliation using provided UI.
 
 ## Using API
-'''java
+```java
 final FindingMovieUI findingMovieUI = new FindingMovieUI();
 findingMovieUI.init();
 //find
@@ -29,11 +29,11 @@ Map<File, Map<String, String>> result = finder.getMovieInfo("/Volumes/JayamalHD/
 for(Map.Entry<File, Map<String, String>> movieEntry : result.entrySet()){
       System.out.println(movieEntry.getKey().getName() + " : " + movieEntry.getValue().get("Title") + " : " + movieEntry.getValue().get("imdbRating"));
 }
-'''
+```
 ## Installation
 
 Execute bellow command to compile and package content in to exetable JAR file.
-
+```
 mvn clean compile assembly:single
-
+```
 ## License
