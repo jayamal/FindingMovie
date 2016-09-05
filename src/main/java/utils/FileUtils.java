@@ -1,19 +1,26 @@
 /*
- * movie-renamer-core
- * Copyright (C) 2012-2013 Nicolas Magré
+ * Copyright - Copyright FindingMovie
+ * Original Work - Copyright (C) 2012 Nicolas Magré
+ * Copyright (C) 2016 Jayamal Kulathunge. All Rights Reserved.
  *
- * This program is free software: you can redistribute it and/or modify
+ * Created Date: 9/5/16 8:07 AM
+ * Last Modified Date: 9/4/16 1:22 PM
+ * File: utils.FileUtils
+ *
+ * This file is part of FindingMovie.
+ *
+ * FindingMovie is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * FindingMovie is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
 package utils;
 
@@ -43,6 +50,7 @@ import java.io.FilenameFilter;
  *
  * @author Nicolas Magré
  * @author Simon QUÉMÉNEUR
+ * @author Jayamal Kulathunge
  */
 public final class FileUtils {
 
