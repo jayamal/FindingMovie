@@ -32,7 +32,7 @@ for(Map.Entry<File, Map<String, String>> movieEntry : result.entrySet()){
 ```
 ## Installation
 
-Execute bellow command to compile and package content in to exetable JAR file.
+Execute bellow command to compile and package content in to executable JAR file.
 ```
 mvn clean compile assembly:single
 ```
