@@ -306,13 +306,11 @@ public final class FileUtils {
 
   public static void collectMediaFiles(File[] files, List<File> collectedMediaFiles) {
     for (File file : files) {
-      if (file.isDirectory()) {
-        //System.out.println("Directory: " + file.getName());
+      if (file.isDirectory() && !file.isHidden()) {
+        System.out.println("Directory: " + file.getName());
         collectMediaFiles(file.listFiles(), collectedMediaFiles); // Calls same method again.
-      } else {
-        if(checkFileExt(file)) {
+      } else if(!file.isHidden() && checkFileExt(file)){
           collectedMediaFiles.add(file);
-        }
       }
     }
   }

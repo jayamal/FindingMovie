@@ -40,6 +40,7 @@ import java.util.Map;
 public class Finder {
 
     private ProgressNotifier progressNotifier;
+    private boolean stopFlag;
 
     public interface ProgressNotifier{
         public void notifyProgress(File file, Map<String, String> infoMap, float progress);
@@ -50,6 +51,7 @@ public class Finder {
     }
 
     public Map<File, Map<String, String>> getMovieInfo(String baseDir){
+        stopFlag = Boolean.FALSE;
         Map<File, Map<String, String>> movieInfoMap = new HashMap<File, Map<String, String>>();
         //list all files
         File[] files = new File(baseDir).listFiles();
@@ -58,21 +60,27 @@ public class Finder {
         FileUtils.collectMediaFiles(files, collectedMediaFiles);
         int size = collectedMediaFiles.size();
         for(File mediaFile : collectedMediaFiles){
-            String fileName = mediaFile.getName();
-            String cleanedName = NameCleaner.extractName(fileName, Boolean.FALSE);
-            Integer cleanedYear = NameCleaner.extractYear(fileName);
-            if(cleanedName != null) {
-                String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
-                        + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
-                Map<String, String> infoMap = RestUtils.convertResponseToMap(response);
-                movieInfoMap.put(mediaFile, infoMap);
-                if (this.progressNotifier != null) {
-                    this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100);
+            if(!stopFlag) {
+                String fileName = mediaFile.getName();
+                String cleanedName = NameCleaner.extractName(fileName, Boolean.FALSE);
+                Integer cleanedYear = NameCleaner.extractYear(fileName);
+                if (cleanedName != null) {
+                    String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
+                            + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
+                    Map<String, String> infoMap = RestUtils.convertResponseToMap(response);
+                    movieInfoMap.put(mediaFile, infoMap);
+                    if (this.progressNotifier != null) {
+                        this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100);
+                    }
                 }
+                index++;
             }
-            index++;
         }
         return movieInfoMap;
+    }
+
+    public void cancelFind(){
+        stopFlag = Boolean.TRUE;
     }
 
 }
