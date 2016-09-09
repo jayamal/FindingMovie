@@ -56,7 +56,7 @@ public class FindingMovieUI extends JFrame {
     private JButton browseBtn;
     private JButton exportBtn;
     private Map<File, Map<String, String>> result;
-    private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location"};
+    private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location", "Result"};
     private DefaultTableModel viewInfoTableModel;
 
     public void init(){
@@ -95,6 +95,7 @@ public class FindingMovieUI extends JFrame {
         sortKeys.add(new RowSorter.SortKey(0, SortOrder.DESCENDING));
         sorter.setSortKeys(sortKeys);
         table.setRowHeight(table.getRowHeight() + 15);
+        table.removeColumn(table.getColumnModel().getColumn(10));
         //Main Tool Bar
         JToolBar toolBar = new JToolBar();
         browseBtn = new JButton();
@@ -116,10 +117,21 @@ public class FindingMovieUI extends JFrame {
         JSplitPane jSplitPane = new JSplitPane();
         jSplitPane.setLeftComponent(new JScrollPane(table));
         //view info
-        final JTable viewInfoTable = new JTable();
-        viewInfoTableModel = new DefaultTableModel(new String[]{"Field", "Value"}, 0);
-        viewInfoTable.setModel(viewInfoTableModel);
-        jSplitPane.setRightComponent(new JScrollPane(viewInfoTable));
+
+        viewInfoTableModel = new DefaultTableModel(new String[]{"Field", "Value"}, 0) {
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return String.class;
+            }
+            public void setValueAt(Object value, int row, int col) {
+                super.setValueAt(value, row, col);
+                fireTableCellUpdated(row, col);
+            }
+        };;
+        final InfoView viewInfoTable = new InfoView(viewInfoTableModel);
+        JScrollPane viewInfoHolder = new JScrollPane(viewInfoTable);
+        jSplitPane.setRightComponent(viewInfoHolder);
+        jSplitPane.setDividerLocation(600);
         add(jSplitPane, BorderLayout.CENTER);
         pack();
         setSize(1024, 600);
@@ -207,7 +219,8 @@ public class FindingMovieUI extends JFrame {
                                     infoMap.get("Released"),
                                     infoMap.get("Runtime"),
                                     infoMap.get("Genre"),
-                                    file.getAbsolutePath()
+                                    file.getAbsolutePath(),
+                                    infoMap
                             });
                         }
                         footer.updateFooter("Processed : " + file.getAbsolutePath(), (int)progress);
@@ -215,7 +228,10 @@ public class FindingMovieUI extends JFrame {
                         table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
                             public void valueChanged(ListSelectionEvent event) {
                                 viewInfoTableModel.setRowCount(0);
-                                for(Map.Entry<String, String> entry : infoMap.entrySet()){
+                                int column = 10;
+                                int row = table.getSelectedRow();
+                                Map<String, String> infoMapCurrent = (Map<String, String>) table.getModel().getValueAt(row, column);
+                                for(Map.Entry<String, String> entry : infoMapCurrent.entrySet()){
                                     viewInfoTableModel.addRow(new Object[]{entry.getKey(), entry.getValue()});
                                 }
                             }

@@ -68,6 +68,7 @@ public class Finder {
                     String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
                             + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
                     Map<String, String> infoMap = RestUtils.convertResponseToMap(response);
+                    infoMap.put("Location", mediaFile.getAbsolutePath());
                     movieInfoMap.put(mediaFile, infoMap);
                     if (this.progressNotifier != null) {
                         this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100);
