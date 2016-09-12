@@ -41,7 +41,7 @@ public class Footer extends JPanel {
         add(progressBar, c1);
         add(progressLbl, c);
         add(cancelBtn, c);
-        cancelBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 16));
+        cancelBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 16, new Color(231, 76, 60)));
     }
 
     public void updateFooter(String progressMsg, int progress){

@@ -49,6 +49,7 @@ public class RestUtils {
         try {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setConnectTimeout(3000);
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
             if (conn.getResponseCode() != 200) {
@@ -79,18 +80,5 @@ public class RestUtils {
         return responseMap;
     }
 
-    public static ImageIcon getImageIcon(String urlStr){
-        ImageIcon imageIcon = null;
-        if(urlStr != null || !urlStr.isEmpty()) {
-            try {
-                URL url = new URL(urlStr);
-                Image image = ImageIO.read(url);
-                imageIcon = new ImageIcon(image.getScaledInstance(75, 111, Image.SCALE_SMOOTH));
-            } catch (IOException e) {
-                System.out.println("Error fetching image : " + urlStr);
-            }
-        }
-        return imageIcon;
-    }
 }
 

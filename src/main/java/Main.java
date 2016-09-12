@@ -23,6 +23,10 @@
  */
 
 import uis.FindingMovieUI;
+
+import javax.swing.*;
+import java.awt.*;
+
 /**
  * Created by jayamal on 9/4/16.
  */
@@ -30,7 +34,15 @@ public class Main {
 
     public static void main(String[] args){
         System.setProperty("java.net.useSystemProxies", "true");
-        final FindingMovieUI findingMovieUI = new FindingMovieUI();
-        findingMovieUI.init();
+        try {
+            // select Look and Feel
+            UIManager.setLookAndFeel("com.jtattoo.plaf.hifi.HiFiLookAndFeel");
+           // UIManager.put("ProgressBar.foreground", new Color(170, 117, 10));
+            final FindingMovieUI findingMovieUI = new FindingMovieUI();
+            findingMovieUI.init();
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 }

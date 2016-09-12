@@ -2,8 +2,8 @@
  * Copyright - Copyright FindingMovie
  * Copyright (C) 2016 Jayamal Kulathunge. All Rights Reserved.
  *
- * Created Date: 9/9/16 8:57 AM
- * Last Modified Date: 9/9/16 8:57 AM
+ * Created Date: 9/10/16 7:13 AM
+ * Last Modified Date: 9/10/16 7:13 AM
  * File: uis.InfoView
  *
  * This file is part of FindingMovie.
@@ -24,180 +24,173 @@
 
 package uis;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import utils.ImageLoader;
+import utils.RestUtils;
+import utils.SpringUtilities;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.event.*;
-import javax.swing.table.*;
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Map;
 
-public class InfoView extends JTable {
+/**
+ * Created by jayamal on 9/10/16.
+ */
+public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
 
-    public class RowHeightCellRenderer extends JTextArea implements TableCellRenderer {
+    private InfoTable infoTable;
+    private JLabel imageLbl;
+    private JButton openBtn;
+    private JButton imdbBtn;
+    private JLabel movieTitleLbl;
+    private JLabel movieRatingLbl;
+    private JLabel movieYearRuntimeLbl;
+    private JLabel movieGenreLbl;
+    private Map<String, String> infoMapCurrent;
+    private File currentFile;
+    private ImageLoader imageLoader;
 
-        public Component getTableCellRendererComponent(
-                JTable table, Object value,
-                boolean isSelected, boolean hasFocus,
-                int row, int column) {
-
-            setEditable(false);
-            setLineWrap(true);
-            setWrapStyleWord(true);
-
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            } else {
-                setBackground(table.getBackground());
-                setForeground(table.getForeground());
-            }
-
-            setText(value.toString());
-            return this;
-        }
-    }
-
-    public static void updateRowHeights(int column, int width, JTable table){
-        for (int row = 0; row < table.getRowCount(); row++) {
-            int rowHeight = table.getRowHeight();
-            Component comp = table.prepareRenderer(table.getCellRenderer(row, column), row, column);
-            Dimension d = comp.getPreferredSize();
-            comp.setSize(new Dimension(width, d.height));
-            d = comp.getPreferredSize();
-            rowHeight = Math.max(rowHeight, d.height);
-            table.setRowHeight(row, rowHeight + 10);
-        }
-    }
-
-    public InfoView(AbstractTableModel model) {
-
-        setDefaultRenderer(String.class, new RowHeightCellRenderer());
-        setModel(model);
-
-        model.addTableModelListener(new TableModelListener() {
+    public InfoView(){
+        setLayout(new BorderLayout());
+        DefaultTableModel viewInfoTableModel = new DefaultTableModel(new String[]{"", ""}, 0) {
             @Override
-            public void tableChanged(TableModelEvent e) {
-                TableColumn c = getColumnModel().getColumn(1);
-                updateRowHeights(1, c.getWidth(), InfoView.this);
+            public Class<?> getColumnClass(int columnIndex) {
+                return String.class;
+            }
+            public void setValueAt(Object value, int row, int col) {
+                super.setValueAt(value, row, col);
+                fireTableCellUpdated(row, col);
+            }
+        };;
+        infoTable = new InfoTable(viewInfoTableModel);
+        JScrollPane viewInfoHolder = new JScrollPane(infoTable);
+        imageLbl = new JLabel("");
+        //highlighted info
+        JPanel highInfoPanel = new JPanel(new BorderLayout());
+        highInfoPanel.add(imageLbl, BorderLayout.WEST);
+
+        // Define the panel to hold the components
+        JPanel panel = new JPanel();
+        panel.setBackground(Color.DARK_GRAY);
+        GridBagLayout layout = new GridBagLayout();
+        panel.setLayout(layout);
+        GridBagConstraints gbc = new GridBagConstraints();
+
+        movieTitleLbl           = new JLabel("Title (Year)");
+        movieTitleLbl.setForeground(Color.white);
+        movieTitleLbl.setFont(new Font(movieTitleLbl.getName(), Font.BOLD, 16));
+        movieRatingLbl          = new JLabel("Rating / 10 (Votes)");
+        movieRatingLbl.setForeground(Color.white);
+        movieYearRuntimeLbl     = new JLabel("Release Date | Runtime");
+        movieYearRuntimeLbl.setForeground(Color.white);
+        movieGenreLbl           = new JLabel("Genre");
+        movieGenreLbl.setForeground(Color.white);
+        openBtn                 = new JButton("Open");
+        imdbBtn                 = new JButton("Open in IMDB");
+        // Put constraints on different buttons
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(5,5,5,5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(movieTitleLbl, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        panel.add(movieRatingLbl, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        panel.add(movieYearRuntimeLbl, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        panel.add(movieGenreLbl, gbc);
+
+        gbc.gridwidth = 1;
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.insets = new Insets(5,0,5,0);
+        panel.add(imdbBtn, gbc);
+
+        gbc.gridx = 1;
+        gbc.gridy = 4;
+        panel.add(openBtn, gbc);
+
+        highInfoPanel.add(panel, BorderLayout.CENTER);
+        add(highInfoPanel, BorderLayout.NORTH);
+        add(viewInfoHolder, BorderLayout.CENTER);
+
+        openBtn.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().open(new File(infoMapCurrent.get("Location")));
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             }
         });
 
-        //set column width
-        //setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        getColumnModel().getColumn(0).setWidth(20);
-        getColumnModel().getColumn(1).setPreferredWidth(300);
-
-        ColumnListener cl = new ColumnListener(){
-
+        imdbBtn.addActionListener(new AbstractAction() {
             @Override
-            public void columnMoved(int oldLocation, int newLocation) {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    String url = "http://www.imdb.com/title/" + infoMapCurrent.get("imdbID");
+                    try {
+                        URI originalRequestPath = new URI(url);
+                        Desktop.getDesktop().browse(originalRequestPath);
+                    } catch (URISyntaxException e1) {
+                        e1.printStackTrace();
+                    }
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
             }
-
-            @Override
-            public void columnResized(int column, int newWidth) {
-                updateRowHeights(column, newWidth, InfoView.this);
-            }
-
-        };
-
-        getColumnModel().addColumnModelListener(cl);
-        getTableHeader().addMouseListener(cl);
-
-        // initial update of row heights
-        TableColumn c = getColumnModel().getColumn(1);
-        updateRowHeights(1, c.getWidth(), this);
+        });
     }
 
-    abstract class ColumnListener extends MouseAdapter implements TableColumnModelListener {
-
-        private int oldIndex = -1;
-        private int newIndex = -1;
-        private boolean dragging = false;
-
-        private boolean resizing = false;
-        private int resizingColumn = -1;
-        private int oldWidth = -1;
-
-        @Override
-        public void mousePressed(MouseEvent e) {
-            // capture start of resize
-            if(e.getSource() instanceof JTableHeader) {
-                JTableHeader header = (JTableHeader)e.getSource();
-                TableColumn tc = header.getResizingColumn();
-                if(tc != null) {
-                    resizing = true;
-                    JTable table = header.getTable();
-                    resizingColumn = table.convertColumnIndexToView( tc.getModelIndex());
-                    oldWidth = tc.getPreferredWidth();
-                } else {
-                    resizingColumn = -1;
-                    oldWidth = -1;
-                }
+    public void updateContent(Map<String, String> infoMapCurrent){
+        if(imageLoader != null){
+            imageLoader.cancel(Boolean.TRUE);
+        }
+        this.infoMapCurrent = infoMapCurrent;
+        infoTable.getModel().setRowCount(0);
+        for(Map.Entry<String, String> entry : infoMapCurrent.entrySet()){
+            if(!entry.getKey().equals("Poster")) {
+                infoTable.getModel().addRow(new Object[]{entry.getKey(), entry.getValue()});
             }
         }
+        movieTitleLbl.setText(infoMapCurrent.get("Title") + " (" + infoMapCurrent.get("Year") + ")");
+        movieRatingLbl.setText(infoMapCurrent.get("imdbRating") + "/10" + " (" + infoMapCurrent.get("imdbVotes") + ")");
+        movieYearRuntimeLbl.setText(infoMapCurrent.get("Released") + " | " + infoMapCurrent.get("Runtime"));
+        movieGenreLbl.setText(infoMapCurrent.get("Genre"));
+        imageLbl.setIcon(null);
+        imageLoader = new ImageLoader(this, infoMapCurrent.get("Poster"));
+        imageLoader.execute();
+    }
 
-        @Override
-        public void mouseReleased(MouseEvent e) {
-            // column moved
-            if(dragging && oldIndex != newIndex) {
-                columnMoved(oldIndex, newIndex);
+    @Override
+    public void imageLoaded(Image image, String url) {
+        if(image != null && url.equals(infoMapCurrent.get("Poster"))) {
+            try {
+                ImageIcon imageIcon = null;
+                imageIcon = new ImageIcon(image.getScaledInstance(150, 222, Image.SCALE_SMOOTH));
+                imageLbl.setIcon(imageIcon);
+            } catch (Exception e) {
+                System.out.println("Error fetching image");
             }
-            dragging = false;
-            oldIndex = -1;
-            newIndex = -1;
-
-            // column resized
-            if(resizing) {
-                if(e.getSource() instanceof JTableHeader) {
-                    JTableHeader header = (JTableHeader)e.getSource();
-                    TableColumn tc = header.getColumnModel().getColumn(resizingColumn);
-                    if(tc != null) {
-                        int newWidth = tc.getPreferredWidth();
-                        if(newWidth != oldWidth) {
-                            columnResized(resizingColumn, newWidth);
-                        }
-                    }
-                }
-            }
-            resizing = false;
-            resizingColumn = -1;
-            oldWidth = -1;
         }
-
-        @Override
-        public void columnAdded(TableColumnModelEvent e) {
-        }
-
-        @Override
-        public void columnRemoved(TableColumnModelEvent e) {
-        }
-
-        @Override
-        public void columnMoved(TableColumnModelEvent e) {
-            // capture dragging
-            dragging = true;
-            if(oldIndex == -1){
-                oldIndex = e.getFromIndex();
-            }
-
-            newIndex = e.getToIndex();
-        }
-
-        @Override
-        public void columnMarginChanged(ChangeEvent e) {
-        }
-
-        @Override
-        public void columnSelectionChanged(ListSelectionEvent e) {
-        }
-
-        public abstract void columnMoved(int oldLocation, int newLocation);
-        public abstract void columnResized(int column, int newWidth);
     }
 }

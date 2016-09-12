@@ -26,12 +26,12 @@ package uis;
 
 import au.com.bytecode.opencsv.CSVWriter;
 import core.Finder;
-import jiconfont.icons.FontAwesome;
 import jiconfont.icons.GoogleMaterialDesignIcons;
 import jiconfont.swing.IconFontSwing;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.*;
@@ -39,9 +39,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.FileWriter;
-import java.rmi.server.ExportException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,24 +54,15 @@ public class FindingMovieUI extends JFrame {
     private JButton exportBtn;
     private Map<File, Map<String, String>> result;
     private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location", "Result"};
-    private DefaultTableModel viewInfoTableModel;
+    private InfoView infoView;
+    public static final Color BTN_ICON_CLR = new Color(209, 205, 205);
+
 
     public void init(){
         setTitle("Finding Movie");
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        } catch (UnsupportedLookAndFeelException e) {
-            e.printStackTrace();
-        }
         // Register the IconFont
         IconFontSwing.register(GoogleMaterialDesignIcons.getIconFont());
-        setIconImage(IconFontSwing.buildImage(GoogleMaterialDesignIcons.FAVORITE_BORDER, 16));
+        setIconImage(IconFontSwing.buildImage(GoogleMaterialDesignIcons.FAVORITE, 16, BTN_ICON_CLR));
         //table
         model = new DefaultTableModel(movieListHeaders, 0);
 
@@ -86,8 +74,13 @@ public class FindingMovieUI extends JFrame {
             {
                 return getValueAt(0, column).getClass();
             }
+
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
         };
         table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        table.setDefaultRenderer(String.class, defaultTableCellRenderer);
         //sorter
         TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
         table.setRowSorter(sorter);
@@ -98,14 +91,14 @@ public class FindingMovieUI extends JFrame {
         table.removeColumn(table.getColumnModel().getColumn(10));
         //Main Tool Bar
         JToolBar toolBar = new JToolBar();
-        browseBtn = new JButton();
+        browseBtn = new JButton("Browse  ");
         browseBtn.setToolTipText("Browse and select directory containing movie files");
-        browseBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.FOLDER_OPEN, 24));
+        browseBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.FOLDER_OPEN, 24, BTN_ICON_CLR));
         toolBar.add(browseBtn);
         //export
-        exportBtn = new JButton();
+        exportBtn = new JButton("Export  ");
         exportBtn.setToolTipText("Export movie list to file");
-        exportBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.PUBLISH, 24));
+        exportBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.PUBLISH, 24, BTN_ICON_CLR));
         toolBar.add(exportBtn);
         //Footer
         footer = new Footer();
@@ -117,24 +110,12 @@ public class FindingMovieUI extends JFrame {
         JSplitPane jSplitPane = new JSplitPane();
         jSplitPane.setLeftComponent(new JScrollPane(table));
         //view info
-
-        viewInfoTableModel = new DefaultTableModel(new String[]{"Field", "Value"}, 0) {
-            @Override
-            public Class<?> getColumnClass(int columnIndex) {
-                return String.class;
-            }
-            public void setValueAt(Object value, int row, int col) {
-                super.setValueAt(value, row, col);
-                fireTableCellUpdated(row, col);
-            }
-        };;
-        final InfoView viewInfoTable = new InfoView(viewInfoTableModel);
-        JScrollPane viewInfoHolder = new JScrollPane(viewInfoTable);
-        jSplitPane.setRightComponent(viewInfoHolder);
-        jSplitPane.setDividerLocation(600);
+        infoView = new InfoView();
+        jSplitPane.setRightComponent(infoView);
+        jSplitPane.setDividerLocation(750);
         add(jSplitPane, BorderLayout.CENTER);
         pack();
-        setSize(1024, 600);
+        setSize(1200, 768);
         setLocationRelativeTo(null);
         setVisible(true);
 
@@ -195,9 +176,20 @@ public class FindingMovieUI extends JFrame {
                 }
             }
         });
+
+        table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
+            public void valueChanged(ListSelectionEvent event) {
+                int column = 10;
+                int row = table.getSelectedRow();
+                int convertedIndex = table.convertRowIndexToModel(row);
+                Map<String, String> infoMapCurrent = (Map<String, String>) table.getModel().getValueAt(convertedIndex, column);
+                infoView.updateContent(infoMapCurrent);
+            }
+        });
     }
 
     private void startFinding(final String filePath, final JTable table){
+        getModel().setRowCount(0);
         //find
         class FindThread extends SwingWorker {
 
@@ -207,8 +199,8 @@ public class FindingMovieUI extends JFrame {
                 footer.getCancelBtn().removeAll();
                 final Finder finder = new Finder(new Finder.ProgressNotifier() {
                     public void notifyProgress(File file, final Map<String, String> infoMap, final float progress) {
-                        System.out.println("Progress : " + progress + " : " + infoMap.get("Title") + " : " + infoMap.get("imdbRating"));
                         if(infoMap.get("Response").equals("True")) {
+                            System.out.println("Progress : " + progress + " : " + infoMap.get("Title") + " : " + infoMap.get("imdbRating"));
                             model.addRow(new Object[]{
                                     infoMap.get("imdbRating"),
                                     infoMap.get("Metascore"),
@@ -222,20 +214,12 @@ public class FindingMovieUI extends JFrame {
                                     file.getAbsolutePath(),
                                     infoMap
                             });
+                        }else{
+                            System.out.println("Progress : " + progress + " : ERROR : ERROR : " + file.getAbsoluteFile());
                         }
                         footer.updateFooter("Processed : " + file.getAbsolutePath(), (int)progress);
                         resizeColumns(table);
-                        table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
-                            public void valueChanged(ListSelectionEvent event) {
-                                viewInfoTableModel.setRowCount(0);
-                                int column = 10;
-                                int row = table.getSelectedRow();
-                                Map<String, String> infoMapCurrent = (Map<String, String>) table.getModel().getValueAt(row, column);
-                                for(Map.Entry<String, String> entry : infoMapCurrent.entrySet()){
-                                    viewInfoTableModel.addRow(new Object[]{entry.getKey(), entry.getValue()});
-                                }
-                            }
-                        });
+
                     }
                 });
                 footer.getCancelBtn().addActionListener(new ActionListener() {
@@ -252,15 +236,6 @@ public class FindingMovieUI extends JFrame {
 
         }
         try {
-            //grant permission for path
-            /*AccessController.doPrivileged(new PrivilegedAction<Object>() {
-
-                public Object run() {
-                    FindThread thread = new FindThread();
-                    thread.execute();
-                    return null;
-                }
-            });*/
             FindThread thread = new FindThread();
             thread.execute();
         } catch (Exception e) {
@@ -288,12 +263,28 @@ public class FindingMovieUI extends JFrame {
                     break;
                 }
             }
-            tableColumn.setPreferredWidth( preferredWidth + 10);
+            tableColumn.setPreferredWidth( preferredWidth);
         }
     }
 
     public DefaultTableModel getModel() {
         return model;
     }
+
+    DefaultTableCellRenderer defaultTableCellRenderer = new DefaultTableCellRenderer() {
+
+        Border padding = BorderFactory.createEmptyBorder(5, 5, 5, 5);
+        @Override
+        public Component getTableCellRendererComponent(JTable table,
+                                                       Object value, boolean isSelected, boolean hasFocus,
+                                                       int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
+                    row, column);
+            setBorder(BorderFactory.createCompoundBorder(getBorder(), padding));
+            return this;
+        }
+
+    };
+
 
 }
