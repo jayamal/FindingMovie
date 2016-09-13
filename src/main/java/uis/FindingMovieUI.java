@@ -53,7 +53,7 @@ public class FindingMovieUI extends JFrame {
     private JButton browseBtn;
     private JButton exportBtn;
     private Map<File, Map<String, String>> result;
-    private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location", "Result"};
+    private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location", "Result", "File"};
     private InfoView infoView;
     public static final Color BTN_ICON_CLR = new Color(209, 205, 205);
 
@@ -89,6 +89,7 @@ public class FindingMovieUI extends JFrame {
         sorter.setSortKeys(sortKeys);
         table.setRowHeight(table.getRowHeight() + 15);
         table.removeColumn(table.getColumnModel().getColumn(10));
+        table.removeColumn(table.getColumnModel().getColumn(10));
         //Main Tool Bar
         JToolBar toolBar = new JToolBar();
         browseBtn = new JButton("Browse  ");
@@ -112,7 +113,7 @@ public class FindingMovieUI extends JFrame {
         //view info
         infoView = new InfoView();
         jSplitPane.setRightComponent(infoView);
-        jSplitPane.setDividerLocation(750);
+        jSplitPane.setDividerLocation(720);
         add(jSplitPane, BorderLayout.CENTER);
         pack();
         setSize(1200, 768);
@@ -180,27 +181,33 @@ public class FindingMovieUI extends JFrame {
         table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
             public void valueChanged(ListSelectionEvent event) {
                 int column = 10;
+                int fcolumn = 11;
                 int row = table.getSelectedRow();
-                int convertedIndex = table.convertRowIndexToModel(row);
-                Map<String, String> infoMapCurrent = (Map<String, String>) table.getModel().getValueAt(convertedIndex, column);
-                infoView.updateContent(infoMapCurrent);
+                if(row >= 0) {
+                    int convertedIndex = table.convertRowIndexToModel(row);
+                    Map<String, String> infoMapCurrent = (Map<String, String>) table.getModel().getValueAt(convertedIndex, column);
+                    File currentFile = (File) table.getModel().getValueAt(convertedIndex, fcolumn);
+                    infoView.updateContent(infoMapCurrent, currentFile);
+                }
             }
         });
     }
 
     private void startFinding(final String filePath, final JTable table){
-        getModel().setRowCount(0);
         //find
         class FindThread extends SwingWorker {
 
             @Override
             protected Object doInBackground() throws Exception {
+                getModel().setRowCount(0);
                 footer.getCancelBtn().setEnabled(Boolean.TRUE);
                 footer.getCancelBtn().removeAll();
+                footer.updateSuccessStatus(0);
+                footer.updateFailedStatus(0);
                 final Finder finder = new Finder(new Finder.ProgressNotifier() {
-                    public void notifyProgress(File file, final Map<String, String> infoMap, final float progress) {
-                        if(infoMap.get("Response").equals("True")) {
-                            System.out.println("Progress : " + progress + " : " + infoMap.get("Title") + " : " + infoMap.get("imdbRating"));
+
+                    public void notifyProgress(File file, final Map<String, String> infoMap, final float progress, int successCount) {
+                        if(infoMap != null && infoMap.get("Response").equals("True")) {
                             model.addRow(new Object[]{
                                     infoMap.get("imdbRating"),
                                     infoMap.get("Metascore"),
@@ -212,14 +219,18 @@ public class FindingMovieUI extends JFrame {
                                     infoMap.get("Runtime"),
                                     infoMap.get("Genre"),
                                     file.getAbsolutePath(),
-                                    infoMap
+                                    infoMap,
+                                    file
                             });
-                        }else{
-                            System.out.println("Progress : " + progress + " : ERROR : ERROR : " + file.getAbsoluteFile());
+                            resizeColumns(table);
                         }
-                        footer.updateFooter("Processed : " + file.getAbsolutePath(), (int)progress);
-                        resizeColumns(table);
+                        footer.updateFooter("Processed : " + file.getAbsolutePath(), (int) progress);
+                        footer.updateSuccessStatus(successCount);
+                    }
 
+                    @Override
+                    public void notifyErrors(File file, int failedCount) {
+                        footer.updateFailedStatus(failedCount);
                     }
                 });
                 footer.getCancelBtn().addActionListener(new ActionListener() {

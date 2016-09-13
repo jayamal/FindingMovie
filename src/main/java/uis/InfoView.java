@@ -24,6 +24,8 @@
 
 package uis;
 
+import jiconfont.icons.GoogleMaterialDesignIcons;
+import jiconfont.swing.IconFontSwing;
 import utils.ImageLoader;
 import utils.RestUtils;
 import utils.SpringUtilities;
@@ -50,6 +52,7 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
     private JLabel imageLbl;
     private JButton openBtn;
     private JButton imdbBtn;
+    private JButton playBtn;
     private JLabel movieTitleLbl;
     private JLabel movieRatingLbl;
     private JLabel movieYearRuntimeLbl;
@@ -94,7 +97,11 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         movieGenreLbl           = new JLabel("Genre");
         movieGenreLbl.setForeground(Color.white);
         openBtn                 = new JButton("Open");
-        imdbBtn                 = new JButton("Open in IMDB");
+        imdbBtn                 = new JButton("IMDB");
+        playBtn                 = new JButton("Play");
+        playBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.PLAY_CIRCLE_FILLED, 24, FindingMovieUI.BTN_ICON_CLR));
+        openBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.FOLDER_OPEN, 24, FindingMovieUI.BTN_ICON_CLR));
+        imdbBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.LOCAL_MOVIES, 24, FindingMovieUI.BTN_ICON_CLR));
         // Put constraints on different buttons
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -121,6 +128,7 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = 4;
+        //gbc.gridwidth = 3;
         gbc.insets = new Insets(5,0,5,0);
         panel.add(imdbBtn, gbc);
 
@@ -128,15 +136,30 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         gbc.gridy = 4;
         panel.add(openBtn, gbc);
 
+        gbc.gridx = 2;
+        gbc.gridy = 4;
+        panel.add(playBtn, gbc);
+
         highInfoPanel.add(panel, BorderLayout.CENTER);
         add(highInfoPanel, BorderLayout.NORTH);
         add(viewInfoHolder, BorderLayout.CENTER);
+
+        playBtn.addActionListener(new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().open(InfoView.this.currentFile);
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
 
         openBtn.addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    Desktop.getDesktop().open(new File(infoMapCurrent.get("Location")));
+                    Desktop.getDesktop().open(new File(InfoView.this.currentFile.getParent()));
                 } catch (IOException e1) {
                     e1.printStackTrace();
                 }
@@ -161,7 +184,8 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         });
     }
 
-    public void updateContent(Map<String, String> infoMapCurrent){
+    public void updateContent(Map<String, String> infoMapCurrent, File currentFile){
+        this.currentFile = currentFile;
         if(imageLoader != null){
             imageLoader.cancel(Boolean.TRUE);
         }

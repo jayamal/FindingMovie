@@ -43,7 +43,10 @@ public class Finder {
     private boolean stopFlag;
 
     public interface ProgressNotifier{
-        public void notifyProgress(File file, Map<String, String> infoMap, float progress);
+
+        public void notifyProgress(File file, Map<String, String> infoMap, float progress, int successCount);
+
+        public void notifyErrors(File file, int failedCount);
     }
 
     public Finder(ProgressNotifier progressNotifier) {
@@ -59,21 +62,35 @@ public class Finder {
         int index = 1;
         FileUtils.collectMediaFiles(files, collectedMediaFiles);
         int size = collectedMediaFiles.size();
+        int successCount = 0;
+        int failedCount = 0;
         for(File mediaFile : collectedMediaFiles){
             if(!stopFlag) {
                 String fileName = mediaFile.getName();
                 String cleanedName = NameCleaner.extractName(fileName, Boolean.FALSE);
                 Integer cleanedYear = NameCleaner.extractYear(fileName);
+                Map<String, String> infoMap = null;
                 if (cleanedName != null) {
                     String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
                             + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
-                    Map<String, String> infoMap = RestUtils.convertResponseToMap(response);
+                    infoMap = RestUtils.convertResponseToMap(response);
                     infoMap.put("Location", mediaFile.getAbsolutePath());
                     movieInfoMap.put(mediaFile, infoMap);
                     if (this.progressNotifier != null) {
-                        this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100);
+                        if(!infoMap.get("Response").equals("True")) {
+                            failedCount++;
+                            this.progressNotifier.notifyErrors(mediaFile, failedCount);
+                        }else {
+                            successCount++;
+                        }
+                    }
+                }else {
+                    if (this.progressNotifier != null) {
+                        failedCount++;
+                        this.progressNotifier.notifyErrors(mediaFile, failedCount);
                     }
                 }
+                this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100, successCount);
                 index++;
             }
         }
