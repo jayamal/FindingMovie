@@ -30,6 +30,7 @@ import jiconfont.icons.GoogleMaterialDesignIcons;
 import jiconfont.swing.IconFontSwing;
 import org.apache.commons.io.FilenameUtils;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.ListSelectionEvent;
@@ -37,8 +38,10 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +55,7 @@ public class FindingMovieUI extends JFrame {
     private Footer footer;
     private JButton browseBtn;
     private JButton exportBtn;
+    private JButton aboutBtn;
     private Map<File, Map<String, String>> result;
     private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location", "Result", "File"};
     private InfoView infoView;
@@ -62,7 +66,14 @@ public class FindingMovieUI extends JFrame {
         setTitle("Finding Movie");
         // Register the IconFont
         IconFontSwing.register(GoogleMaterialDesignIcons.getIconFont());
-        setIconImage(IconFontSwing.buildImage(GoogleMaterialDesignIcons.FAVORITE, 16, BTN_ICON_CLR));
+        try {
+            java.net.URL imgUrl = getClass().getResource("/finding-movie-icon.png");
+            BufferedImage picture = ImageIO.read(imgUrl);
+            ImageIcon icon = new ImageIcon(picture.getScaledInstance(36, 36, Image.SCALE_SMOOTH));
+            setIconImage(icon.getImage());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         //table
         model = new DefaultTableModel(movieListHeaders, 0);
 
@@ -101,6 +112,10 @@ public class FindingMovieUI extends JFrame {
         exportBtn.setToolTipText("Export movie list to file");
         exportBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.PUBLISH, 24, BTN_ICON_CLR));
         toolBar.add(exportBtn);
+        //about
+        aboutBtn = new JButton("About  ");
+        aboutBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.INFO, 24, BTN_ICON_CLR));
+        toolBar.add(aboutBtn);
         //Footer
         footer = new Footer();
         //open window
@@ -175,6 +190,13 @@ public class FindingMovieUI extends JFrame {
                     JOptionPane.showMessageDialog(FindingMovieUI.this, "Error occurred while exporting");
                     ex.printStackTrace();
                 }
+            }
+        });
+
+        aboutBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                AboutDialog aboutDialog = new AboutDialog(FindingMovieUI.this, "About");
             }
         });
 

@@ -32,6 +32,7 @@ import utils.SpringUtilities;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -85,7 +86,7 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         panel.setBackground(Color.DARK_GRAY);
         GridBagLayout layout = new GridBagLayout();
         panel.setLayout(layout);
-        GridBagConstraints gbc = new GridBagConstraints();
+        panel.setBorder(new EmptyBorder(20, 20, 20, 20));
 
         movieTitleLbl           = new JLabel("Title (Year)");
         movieTitleLbl.setForeground(Color.white);
@@ -103,6 +104,7 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         openBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.FOLDER_OPEN, 24, FindingMovieUI.BTN_ICON_CLR));
         imdbBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.LOCAL_MOVIES, 24, FindingMovieUI.BTN_ICON_CLR));
         // Put constraints on different buttons
+        GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
@@ -125,20 +127,18 @@ public class InfoView extends JPanel implements ImageLoader.ImageConsumer{
         gbc.gridwidth = 2;
         panel.add(movieGenreLbl, gbc);
 
+        JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        toolBar.add(imdbBtn);
+        toolBar.add(openBtn);
+        toolBar.add(playBtn);
+
         gbc.gridwidth = 1;
         gbc.gridx = 0;
         gbc.gridy = 4;
-        //gbc.gridwidth = 3;
-        gbc.insets = new Insets(5,0,5,0);
-        panel.add(imdbBtn, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridy = 4;
-        panel.add(openBtn, gbc);
-
-        gbc.gridx = 2;
-        gbc.gridy = 4;
-        panel.add(playBtn, gbc);
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(0,0,0,0);
+        panel.add(toolBar, gbc);
+        toolBar.setBackground(Color.DARK_GRAY);
 
         highInfoPanel.add(panel, BorderLayout.CENTER);
         add(highInfoPanel, BorderLayout.NORTH);

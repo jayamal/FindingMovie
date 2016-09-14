@@ -35,10 +35,10 @@ public class Footer extends JPanel {
         Border border = successStatus.getBorder();
         Border margin = new EmptyBorder(4,10,4,10);
         successStatus.setBorder(new CompoundBorder(border, margin));
-        successStatus.setBackground(new Color(27,200,120));
+        successStatus.setBackground(new Color(218, 148, 50));
         Border border1 = failedStatus.getBorder();
         failedStatus.setBorder(new CompoundBorder(border1, margin));
-        failedStatus.setBackground(new Color(244,67,5));
+        failedStatus.setBackground(new Color(221, 99, 51));
         GridBagConstraints c = new GridBagConstraints();
         c.weighty = 1;
         c.weightx = 0;
