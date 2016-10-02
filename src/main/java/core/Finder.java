@@ -41,12 +41,13 @@ public class Finder {
 
     private ProgressNotifier progressNotifier;
     private boolean stopFlag;
+    public static final int MIN_SIZE_MB = 350;
 
     public interface ProgressNotifier{
 
         public void notifyProgress(File file, Map<String, String> infoMap, float progress, int successCount);
 
-        public void notifyErrors(File file, int failedCount);
+        public void notifyErrors(File file, int failedCount, String reason);
     }
 
     public Finder(ProgressNotifier progressNotifier) {
@@ -65,36 +66,67 @@ public class Finder {
         int successCount = 0;
         int failedCount = 0;
         for(File mediaFile : collectedMediaFiles){
+            double fileSize = FileUtils.getFileSizeInMB(mediaFile);
             if(!stopFlag) {
-                String fileName = mediaFile.getName();
-                String cleanedName = NameCleaner.extractName(fileName, Boolean.FALSE);
-                Integer cleanedYear = NameCleaner.extractYear(fileName);
-                Map<String, String> infoMap = null;
-                if (cleanedName != null) {
-                    String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
-                            + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
-                    infoMap = RestUtils.convertResponseToMap(response);
+                if(fileSize >= MIN_SIZE_MB) {
+                    String fileName = mediaFile.getName();
+                    String cleanedName = NameCleaner.extractName(fileName, Boolean.FALSE);
+                    Integer cleanedYear = NameCleaner.extractYear(fileName);
+                    Map<String, String> infoMap = fetchMovieInfo(cleanedName, cleanedYear);
                     infoMap.put("Location", mediaFile.getAbsolutePath());
                     movieInfoMap.put(mediaFile, infoMap);
                     if (this.progressNotifier != null) {
-                        if(!infoMap.get("Response").equals("True")) {
-                            failedCount++;
-                            this.progressNotifier.notifyErrors(mediaFile, failedCount);
-                        }else {
+                        if (!infoMap.get("Response").equals("True")) {
+                            if (mediaFile.getParentFile() != null) {
+                                String parentFile = mediaFile.getParentFile().getName();
+                                cleanedName = NameCleaner.extractName(parentFile, Boolean.FALSE);
+                                cleanedYear = NameCleaner.extractYear(parentFile);
+                                infoMap = fetchMovieInfo(cleanedName, cleanedYear);
+                                infoMap.put("Location", mediaFile.getAbsolutePath());
+                                movieInfoMap.put(mediaFile, infoMap);
+                                if (infoMap.get("Response").equals("True")) {
+                                    enrichMediaInformation(mediaFile, infoMap);
+                                    successCount++;
+                                } else {
+                                    failedCount++;
+                                    this.progressNotifier.notifyErrors(mediaFile, failedCount, "Failed to fetch info, Name \"" + cleanedName + "\" Year " + cleanedYear );
+                                }
+                            }
+
+                        } else {
+                            enrichMediaInformation(mediaFile, infoMap);
                             successCount++;
                         }
+                        this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100, successCount);
                     }
-                }else {
-                    if (this.progressNotifier != null) {
-                        failedCount++;
-                        this.progressNotifier.notifyErrors(mediaFile, failedCount);
-                    }
+                }else{
+                    failedCount++;
+                    this.progressNotifier.notifyErrors(mediaFile, failedCount, "Size " + fileSize + " MB, less than " + MIN_SIZE_MB + " MB");
                 }
-                this.progressNotifier.notifyProgress(mediaFile, infoMap, ((float) index / size) * 100, successCount);
                 index++;
             }
         }
         return movieInfoMap;
+    }
+
+    private void enrichMediaInformation(File file, Map<String, String> infoMap){
+        //Enrich file size
+        double fileSize = FileUtils.getFileSizeInMB(file);
+        String fileSizeStr = String.valueOf(fileSize) + " MB";
+        infoMap.put("Size",  fileSizeStr);
+    }
+
+    private Map<String, String> fetchMovieInfo(String cleanedName, Integer cleanedYear){
+        Map<String, String> infoMap = new HashMap<String, String>();
+        if (cleanedName != null && !cleanedName.isEmpty()) {
+            String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
+                    + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
+            infoMap = RestUtils.convertResponseToMap(response);
+        }else {
+            infoMap.put("Response", "False");
+            infoMap.put("Reason", "Couldn't extract movie name from file");
+        }
+        return infoMap;
     }
 
     public void cancelFind(){

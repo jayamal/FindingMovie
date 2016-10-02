@@ -25,41 +25,51 @@
 package uis;
 
 import au.com.bytecode.opencsv.CSVWriter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
 import core.Finder;
+import domain.IgnoredItem;
+import domain.MediaItem;
 import jiconfont.icons.GoogleMaterialDesignIcons;
 import jiconfont.swing.IconFontSwing;
 import org.apache.commons.io.FilenameUtils;
+import uis.ignored.IgnoredView;
+import uis.results.ResultView;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
+import java.io.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by jayamal on 9/4/16.
  */
 public class FindingMovieUI extends JFrame {
 
-    private DefaultTableModel model;
+    private ProgressArea progressArea;
+    private JTabbedPane tabbedPane;
     private Footer footer;
     private JButton browseBtn;
+    private JButton saveBtn;
+    private JButton openBtn;
     private JButton exportBtn;
     private JButton aboutBtn;
+    private ResultView resultView;
+    private IgnoredView ignoredView;
+
     private Map<File, Map<String, String>> result;
-    private String[] movieListHeaders = new String[]{"IMDB Rating","Metascore" ,"IMDB Votes" , "Title", "Year", "Rated", "Released", "Runtime", "Genre", "Location", "Result", "File"};
-    private InfoView infoView;
+
     public static final Color BTN_ICON_CLR = new Color(209, 205, 205);
+    public static final Color GOOD_CLR = new Color(218, 148, 50);
+    public static final Color BAD_CLR = new Color(221, 99, 51);
 
 
     public void init(){
@@ -74,39 +84,22 @@ public class FindingMovieUI extends JFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //table
-        model = new DefaultTableModel(movieListHeaders, 0);
-
-        final JTable table = new JTable(model)
-        {
-            //  Returning the Class of each column will allow different
-            //  renderer to be used based on Class
-            public Class getColumnClass(int column)
-            {
-                return getValueAt(0, column).getClass();
-            }
-
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        table.setDefaultRenderer(String.class, defaultTableCellRenderer);
-        //sorter
-        TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
-        table.setRowSorter(sorter);
-        List<RowSorter.SortKey> sortKeys = new ArrayList<RowSorter.SortKey>(25);
-        sortKeys.add(new RowSorter.SortKey(0, SortOrder.DESCENDING));
-        sorter.setSortKeys(sortKeys);
-        table.setRowHeight(table.getRowHeight() + 15);
-        table.removeColumn(table.getColumnModel().getColumn(10));
-        table.removeColumn(table.getColumnModel().getColumn(10));
         //Main Tool Bar
         JToolBar toolBar = new JToolBar();
-        browseBtn = new JButton("Browse  ");
-        browseBtn.setToolTipText("Browse and select directory containing movie files");
-        browseBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.FOLDER_OPEN, 24, BTN_ICON_CLR));
+        browseBtn = new JButton("Search  ");
+        browseBtn.setToolTipText("Browse and select directory containing movie files for search");
+        browseBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.SEARCH, 24, BTN_ICON_CLR));
         toolBar.add(browseBtn);
+        //Save
+        saveBtn = new JButton("Save  ");
+        saveBtn.setToolTipText("Save search result");
+        saveBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.SAVE, 24, BTN_ICON_CLR));
+        toolBar.add(saveBtn);
+        //Open
+        openBtn = new JButton("Open  ");
+        openBtn.setToolTipText("Open saved search results (.fm file)");
+        openBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.OPEN_IN_BROWSER, 24, BTN_ICON_CLR));
+        toolBar.add(openBtn);
         //export
         exportBtn = new JButton("Export  ");
         exportBtn.setToolTipText("Export movie list to file");
@@ -117,21 +110,29 @@ public class FindingMovieUI extends JFrame {
         aboutBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.INFO, 24, BTN_ICON_CLR));
         toolBar.add(aboutBtn);
         //Footer
-        footer = new Footer();
+        progressArea = new ProgressArea();
         //open window
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         add(toolBar, BorderLayout.PAGE_START);
-        add(footer, BorderLayout.SOUTH);
-        //split pane
-        JSplitPane jSplitPane = new JSplitPane();
-        jSplitPane.setLeftComponent(new JScrollPane(table));
-        //view info
-        infoView = new InfoView();
-        jSplitPane.setRightComponent(infoView);
-        jSplitPane.setDividerLocation(720);
-        add(jSplitPane, BorderLayout.CENTER);
+        //result view
+        resultView = new ResultView();
+        //ignored view
+        ignoredView = new IgnoredView();
+        //tabbed pane
+        tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Movie Results", IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHECK_BOX, 24, GOOD_CLR), resultView);
+        tabbedPane.addTab("Ignored", IconFontSwing.buildIcon(GoogleMaterialDesignIcons.INDETERMINATE_CHECK_BOX, 24, BAD_CLR), ignoredView);
+        JPanel mainArea = new JPanel(new BorderLayout());
+        mainArea.add(progressArea, BorderLayout.PAGE_START);
+        progressArea.setVisible(Boolean.FALSE);
+        mainArea.add(tabbedPane, BorderLayout.CENTER);
+        footer = new Footer();
+        mainArea.add(footer, BorderLayout.SOUTH);
+        add(mainArea, BorderLayout.CENTER);
         pack();
-        setSize(1200, 768);
+        //set size
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        setSize((int) (screenSize.width*0.85), (int) (screenSize.height*0.85));
         setLocationRelativeTo(null);
         setVisible(true);
 
@@ -145,7 +146,7 @@ public class FindingMovieUI extends JFrame {
                 int returnVal = fc.showDialog(FindingMovieUI.this, "Select Folder");
                 if(returnVal == JFileChooser.APPROVE_OPTION) {
                     File folder = fc.getSelectedFile();
-                    startFinding(folder.getAbsolutePath(), table);
+                    startFinding(folder.getAbsolutePath(), resultView);
                     browseBtn.setEnabled(Boolean.FALSE);
                 }
             }
@@ -164,19 +165,24 @@ public class FindingMovieUI extends JFrame {
                         }
                         String csv = file.getAbsolutePath();
                         CSVWriter writer = new CSVWriter(new FileWriter(csv));
+                        DefaultTableModel model = resultView.getModel();
                         int colCount = model.getColumnCount();
                         String[] header = new String[colCount];
                         for(int j=0; j < colCount; j++) {
                             //Create Header
-                            header[j] = model.getColumnName(j);
+                            if(j != 1) {
+                                header[j] = model.getColumnName(j);
+                            }
                         }
                         writer.writeNext(header);
                         for(int i=0; i< model.getRowCount(); i++) {
                             String[] record = new String[colCount];
-                            int convertedIndex = table.convertRowIndexToModel(i);
+                            int convertedIndex = resultView.getTable().convertRowIndexToModel(i);
                             for(int j=0; j < colCount; j++) {
                                 //Create record
-                                record[j] = model.getValueAt(convertedIndex, j).toString();
+                                if(j != 1) {
+                                    record[j] = model.getValueAt(convertedIndex, j).toString();
+                                }
                             }
                             //Write the record to file
                             writer.writeNext(record);
@@ -193,6 +199,81 @@ public class FindingMovieUI extends JFrame {
             }
         });
 
+        saveBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fileChooser = new JFileChooser();
+                String userDir = System.getProperty("user.home");
+                fileChooser.setCurrentDirectory(new java.io.File(userDir));
+                if (fileChooser.showSaveDialog(FindingMovieUI.this) == JFileChooser.APPROVE_OPTION) {
+                    File file = fileChooser.getSelectedFile();
+                    // save to file
+                    if (!FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("fm")) {
+                        file = new File(file.toString() + ".fm");
+                    }
+                    java.util.List<MediaItem> mediaItemList = resultView.getAllItemsAsList();
+                    try {
+                        Writer writer = new FileWriter(file.getAbsolutePath());
+                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                        String jsonStr = gson.toJson(mediaItemList);
+                        try {
+                            file.createNewFile();
+                            FileOutputStream fOut = new FileOutputStream(file);
+                            OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
+                            myOutWriter.append(jsonStr);
+                            myOutWriter.close();
+                            fOut.close();
+                        } catch (Exception e1) {
+                            e1.printStackTrace();
+                        }
+                        JOptionPane.showMessageDialog(FindingMovieUI.this, "Saved : " + file.getAbsolutePath());
+                    } catch (Exception e1) {
+                        JOptionPane.showMessageDialog(FindingMovieUI.this, "Error occurred while saving the file");
+                        e1.printStackTrace();
+                    }
+                }
+
+            }
+        });
+
+        openBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser fc = new JFileChooser();
+                String userDir = System.getProperty("user.home");
+                fc.setCurrentDirectory(new java.io.File(userDir)); // start at application current directory
+                fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
+                FileNameExtensionFilter filter = new FileNameExtensionFilter("SAVED SEARCHES", "fm", "text");
+                fc.setFileFilter(filter);
+                int returnVal = fc.showDialog(FindingMovieUI.this, "Select Saved Result");
+                if(returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = fc.getSelectedFile();
+                    try {
+                        JsonReader reader = new JsonReader(new FileReader(file.getAbsolutePath()));
+                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+                        java.util.List<MediaItem> mediaItemListTemp = gson.fromJson(reader, new TypeToken<List<MediaItem>>() {
+                        }.getType());
+                        resultView.clearResultView();
+                        ignoredView.clearResultView();
+                        if (mediaItemListTemp != null) {
+                            for (MediaItem mediaItem : mediaItemListTemp) {
+                                try {
+                                    mediaItem.setFile(new File(mediaItem.getFileLocation()));
+                                    resultView.addMediaItem(mediaItem);
+                                } catch (Exception ex) {
+                                    ex.printStackTrace();
+                                }
+                            }
+                        }
+                    }catch (Exception ex){
+                        JOptionPane.showMessageDialog(FindingMovieUI.this, "Error occurred while opening the file");
+                        ex.printStackTrace();
+                    }
+                }
+
+            }
+        });
+
         aboutBtn.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -200,62 +281,38 @@ public class FindingMovieUI extends JFrame {
             }
         });
 
-        table.getSelectionModel().addListSelectionListener(new ListSelectionListener(){
-            public void valueChanged(ListSelectionEvent event) {
-                int column = 10;
-                int fcolumn = 11;
-                int row = table.getSelectedRow();
-                if(row >= 0) {
-                    int convertedIndex = table.convertRowIndexToModel(row);
-                    Map<String, String> infoMapCurrent = (Map<String, String>) table.getModel().getValueAt(convertedIndex, column);
-                    File currentFile = (File) table.getModel().getValueAt(convertedIndex, fcolumn);
-                    infoView.updateContent(infoMapCurrent, currentFile);
-                }
-            }
-        });
     }
 
-    private void startFinding(final String filePath, final JTable table){
+    private void startFinding(final String filePath, final ResultView resultView){
         //find
         class FindThread extends SwingWorker {
 
             @Override
             protected Object doInBackground() throws Exception {
-                getModel().setRowCount(0);
-                footer.getCancelBtn().setEnabled(Boolean.TRUE);
-                footer.getCancelBtn().removeAll();
-                footer.updateSuccessStatus(0);
-                footer.updateFailedStatus(0);
+                resultView.clearResultView();
+                ignoredView.clearResultView();
+                progressArea.setVisible(Boolean.TRUE);
+                progressArea.getCancelBtn().setEnabled(Boolean.TRUE);
+                progressArea.getCancelBtn().removeAll();
+                tabbedPane.setTitleAt(0, "Movie Results");
                 final Finder finder = new Finder(new Finder.ProgressNotifier() {
 
                     public void notifyProgress(File file, final Map<String, String> infoMap, final float progress, int successCount) {
                         if(infoMap != null && infoMap.get("Response").equals("True")) {
-                            model.addRow(new Object[]{
-                                    infoMap.get("imdbRating"),
-                                    infoMap.get("Metascore"),
-                                    infoMap.get("imdbVotes"),
-                                    infoMap.get("Title"),
-                                    infoMap.get("Year"),
-                                    infoMap.get("Rated"),
-                                    infoMap.get("Released"),
-                                    infoMap.get("Runtime"),
-                                    infoMap.get("Genre"),
-                                    file.getAbsolutePath(),
-                                    infoMap,
-                                    file
-                            });
-                            resizeColumns(table);
+                            resultView.addMediaItem(new MediaItem(infoMap, file));
                         }
-                        footer.updateFooter("Processed : " + file.getAbsolutePath(), (int) progress);
-                        footer.updateSuccessStatus(successCount);
+                        progressArea.updateFooter("Processed : " + file.getAbsolutePath(), (int) progress);
+                        tabbedPane.setTitleAt(0, "Movie Results [" + successCount + "]");
                     }
 
                     @Override
-                    public void notifyErrors(File file, int failedCount) {
-                        footer.updateFailedStatus(failedCount);
+                    public void notifyErrors(File file, int failedCount, String reason) {
+                        System.out.println(file.getName() + " : " + reason);
+                        ignoredView.addIgnoredItem(new IgnoredItem(file, reason));
+                        tabbedPane.setTitleAt(1, "Ignored [" + failedCount + "]");
                     }
                 });
-                footer.getCancelBtn().addActionListener(new ActionListener() {
+                progressArea.getCancelBtn().addActionListener(new ActionListener() {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         finder.cancelFind();
@@ -263,7 +320,8 @@ public class FindingMovieUI extends JFrame {
                 });
                 result = finder.getMovieInfo(filePath);
                 browseBtn.setEnabled(Boolean.TRUE);
-                footer.getCancelBtn().setEnabled(Boolean.FALSE);
+                progressArea.getCancelBtn().setEnabled(Boolean.FALSE);
+                progressArea.setVisible(Boolean.FALSE);
                 return null;
             }
 
@@ -275,49 +333,6 @@ public class FindingMovieUI extends JFrame {
             e.printStackTrace();
         }
     }
-
-    private void resizeColumns(JTable table){
-        for (int column = 0; column < table.getColumnCount(); column++)
-        {
-            TableColumn tableColumn = table.getColumnModel().getColumn(column);
-            int preferredWidth = tableColumn.getHeaderValue().toString().length() * 6;
-            int maxWidth = tableColumn.getMaxWidth();
-
-            for (int row = 0; row < table.getRowCount(); row++)
-            {
-                TableCellRenderer cellRenderer = table.getCellRenderer(row, column);
-                Component c = table.prepareRenderer(cellRenderer, row, column);
-                int width = c.getPreferredSize().width + table.getIntercellSpacing().width;
-                preferredWidth = Math.max(preferredWidth, width);
-                //  We've exceeded the maximum width, no need to check other rows
-                if (preferredWidth >= maxWidth)
-                {
-                    preferredWidth = maxWidth;
-                    break;
-                }
-            }
-            tableColumn.setPreferredWidth( preferredWidth);
-        }
-    }
-
-    public DefaultTableModel getModel() {
-        return model;
-    }
-
-    DefaultTableCellRenderer defaultTableCellRenderer = new DefaultTableCellRenderer() {
-
-        Border padding = BorderFactory.createEmptyBorder(5, 5, 5, 5);
-        @Override
-        public Component getTableCellRendererComponent(JTable table,
-                                                       Object value, boolean isSelected, boolean hasFocus,
-                                                       int row, int column) {
-            super.getTableCellRendererComponent(table, value, isSelected, hasFocus,
-                    row, column);
-            setBorder(BorderFactory.createCompoundBorder(getBorder(), padding));
-            return this;
-        }
-
-    };
 
 
 }

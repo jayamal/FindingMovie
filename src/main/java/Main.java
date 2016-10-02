@@ -37,7 +37,7 @@ public class Main {
         try {
             // select Look and Feel
             UIManager.setLookAndFeel("com.jtattoo.plaf.hifi.HiFiLookAndFeel");
-           // UIManager.put("ProgressBar.foreground", new Color(170, 117, 10));
+           // UIManager.put("ProgressArea.foreground", new Color(170, 117, 10));
             final FindingMovieUI findingMovieUI = new FindingMovieUI();
             findingMovieUI.init();
         }

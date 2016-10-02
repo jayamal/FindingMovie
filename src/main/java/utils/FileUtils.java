@@ -319,10 +319,8 @@ public final class FileUtils {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * Get all media files
-   * @param files
-   * @return
-     */
+  public static double getFileSizeInMB(File file){
+    return file.length()/(1024*1024);
+  }
 
 }
