@@ -9,7 +9,7 @@ final Finder finder = new Finder(new Finder.ProgressNotifier() {
     public void notifyProgress(File file, final Map<String, String> infoMap, final float progress, int successCount) {
         if(infoMap != null && infoMap.get("Response").equals("True")) {
             //use infoMap data here
-			System.out.println(infoMap.get("imdbRating"));
+	    System.out.println(infoMap.get("imdbRating"));
         }
     }
 
