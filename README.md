@@ -18,6 +18,8 @@ final Finder finder = new Finder(new Finder.ProgressNotifier() {
         System.out.println(file.getName() + " : " + reason);
     }
 });
+//invoke finder
+Map<File, Map<String, String>> result = finder.getMovieInfo(filePath);
 ```
 ## Installation
 
