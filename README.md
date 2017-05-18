@@ -4,31 +4,20 @@ It is difficult find a good movie when your friend give you gigabytes of his mov
 
 ## Using API
 ```java
-final FindingMovieUI findingMovieUI = new FindingMovieUI();
-findingMovieUI.init();
-//find
-Finder finder = new Finder(new Finder.ProgressNotifier() {
-  public void notifyProgress(File file, Map<String, String> infoMap, float progress) {
-      System.out.println("Progress : " + progress + " : " + infoMap.get("Title") + " : " + infoMap.get("imdbRating"));
-      if(infoMap.get("Response").equals("True")) {
-          findingMovieUI.getModel().addRow(new Object[]{
-                  infoMap.get("imdbRating"),
-                  //RestUtils.getImageIcon(infoMap.get("Poster")),
-                  infoMap.get("Title"),
-                  infoMap.get("Year"),
-                  infoMap.get("Rated"),
-                  infoMap.get("Released"),
-                  infoMap.get("Runtime"),
-                  infoMap.get("Genre")
-          });
-      }
-      findingMovieUI.getProgressBar().setValue((int)progress);
-  }
+final Finder finder = new Finder(new Finder.ProgressNotifier() {
+
+    public void notifyProgress(File file, final Map<String, String> infoMap, final float progress, int successCount) {
+        if(infoMap != null && infoMap.get("Response").equals("True")) {
+            //use infoMap data here
+			System.out.println(infoMap.get("imdbRating"));
+        }
+    }
+
+    @Override
+    public void notifyErrors(File file, int failedCount, String reason) {
+        System.out.println(file.getName() + " : " + reason);
+    }
 });
-Map<File, Map<String, String>> result = finder.getMovieInfo("/Volumes/JayamalHD/Films/");
-for(Map.Entry<File, Map<String, String>> movieEntry : result.entrySet()){
-      System.out.println(movieEntry.getKey().getName() + " : " + movieEntry.getValue().get("Title") + " : " + movieEntry.getValue().get("imdbRating"));
-}
 ```
 ## Installation
 
