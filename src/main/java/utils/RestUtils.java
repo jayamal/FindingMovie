@@ -64,6 +64,7 @@ public class RestUtils {
             }
             out = buffer.toString();
             conn.disconnect();
+            System.out.println("REST call done : " + urlStr);
 
         } catch (MalformedURLException e) {
             e.printStackTrace();

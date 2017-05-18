@@ -22,10 +22,12 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import com.jtattoo.plaf.hifi.HiFiLookAndFeel;
 import uis.FindingMovieUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Properties;
 
 /**
  * Created by jayamal on 9/4/16.
@@ -36,8 +38,10 @@ public class Main {
         System.setProperty("java.net.useSystemProxies", "true");
         try {
             // select Look and Feel
+            Properties props = new Properties();
+            props.put("logoString", "");
+            HiFiLookAndFeel.setCurrentTheme(props);
             UIManager.setLookAndFeel("com.jtattoo.plaf.hifi.HiFiLookAndFeel");
-           // UIManager.put("ProgressArea.foreground", new Color(170, 117, 10));
             final FindingMovieUI findingMovieUI = new FindingMovieUI();
             findingMovieUI.init();
         }

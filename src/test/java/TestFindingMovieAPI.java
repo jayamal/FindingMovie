@@ -22,9 +22,42 @@
  * along with Foobar.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+
 /**
  * Created by jayamal on 9/4/16.
  */
 public class TestFindingMovieAPI {
+
+    public static void main(String[] args) {
+
+        String[] scheduleName = {"Schedule 1","Schedule 2","Schedule 3","Schedule 4","Schedule 5","Schedule 6","Schedule 7","Schedule 8"};
+        String[] scheduleTime = {"09:10","11","14:25","17","20:30","20:30","20:30","21"};
+
+        NavigableMap<String,List<String>> navigableMap=new TreeMap<String,List<String>>();
+
+        for(int i=0;i<scheduleName.length;i++){
+
+            if(navigableMap.containsKey(scheduleTime[i])){
+                navigableMap.get(scheduleTime[i]).add(scheduleName[i]) ;
+            } else {
+                List<String> schedules = new ArrayList<String>();
+                schedules.add(scheduleName[i]);
+                navigableMap.put(scheduleTime[i], schedules);
+            }
+
+        }
+
+
+        System.out.println("headMap " + navigableMap.headMap("20:30"));
+        System.out.println("tailMap  " + navigableMap.tailMap("14:25"));
+        System.out.println("subMap {current hour} " + navigableMap.subMap("20","21"));
+
+
+    }
+
 
 }

@@ -35,8 +35,11 @@ import domain.MediaItem;
 import jiconfont.icons.GoogleMaterialDesignIcons;
 import jiconfont.swing.IconFontSwing;
 import org.apache.commons.io.FilenameUtils;
+import uis.components.PopUpButton;
 import uis.ignored.IgnoredView;
 import uis.results.ResultView;
+import utils.AnalyticsUtil;
+import utils.PreferenceUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -64,6 +67,7 @@ public class FindingMovieUI extends JFrame {
     private JButton aboutBtn;
     private ResultView resultView;
     private IgnoredView ignoredView;
+    private JPopupMenu recentItemsMenu;
 
     private Map<File, Map<String, String>> result;
 
@@ -85,7 +89,7 @@ public class FindingMovieUI extends JFrame {
             e.printStackTrace();
         }
         //Main Tool Bar
-        JToolBar toolBar = new JToolBar();
+        JToolBar toolBar = new JToolBar(SwingConstants.HORIZONTAL);
         browseBtn = new JButton("Search  ");
         browseBtn.setToolTipText("Browse and select directory containing movie files for search");
         browseBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.SEARCH, 24, BTN_ICON_CLR));
@@ -100,11 +104,19 @@ public class FindingMovieUI extends JFrame {
         openBtn.setToolTipText("Open saved search results (.fm file)");
         openBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.OPEN_IN_BROWSER, 24, BTN_ICON_CLR));
         toolBar.add(openBtn);
+        //Open Recent
+        //Build the first menu.
+        recentItemsMenu = new JPopupMenu();
+        populateRecentItems();
+        PopUpButton popUpButton = new PopUpButton("Recent  ", recentItemsMenu);
+        popUpButton.setToolTipText("Open recent saved or opened results (.fm)");
+        popUpButton.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.HISTORY, 24, BTN_ICON_CLR));
+        toolBar.add(popUpButton);
         //export
         exportBtn = new JButton("Export  ");
         exportBtn.setToolTipText("Export movie list to file");
         exportBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.PUBLISH, 24, BTN_ICON_CLR));
-        toolBar.add(exportBtn);
+        //toolBar.add(exportBtn);
         //about
         aboutBtn = new JButton("About  ");
         aboutBtn.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.INFO, 24, BTN_ICON_CLR));
@@ -141,11 +153,12 @@ public class FindingMovieUI extends JFrame {
             public void actionPerformed(ActionEvent e)
             {
                 JFileChooser fc = new JFileChooser();
-                fc.setCurrentDirectory(new java.io.File(".")); // start at application current directory
+                fc.setCurrentDirectory(new java.io.File(PreferenceUtil.getPreference(PreferenceUtil.PreferenceKey.LAST_SEARCHED_LOCATION, "."))); // start at application current directory
                 fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                 int returnVal = fc.showDialog(FindingMovieUI.this, "Select Folder");
                 if(returnVal == JFileChooser.APPROVE_OPTION) {
                     File folder = fc.getSelectedFile();
+                    PreferenceUtil.updatePreference(PreferenceUtil.PreferenceKey.LAST_SEARCHED_LOCATION, folder.getAbsolutePath());
                     startFinding(folder.getAbsolutePath(), resultView);
                     browseBtn.setEnabled(Boolean.FALSE);
                 }
@@ -203,10 +216,10 @@ public class FindingMovieUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fileChooser = new JFileChooser();
-                String userDir = System.getProperty("user.home");
-                fileChooser.setCurrentDirectory(new java.io.File(userDir));
+                fileChooser.setCurrentDirectory(new java.io.File(PreferenceUtil.getPreference(PreferenceUtil.PreferenceKey.LAST_SAVED_LOCATION, ".")));
                 if (fileChooser.showSaveDialog(FindingMovieUI.this) == JFileChooser.APPROVE_OPTION) {
                     File file = fileChooser.getSelectedFile();
+                    PreferenceUtil.updatePreference(PreferenceUtil.PreferenceKey.LAST_SAVED_LOCATION, file.getParentFile().getAbsolutePath());
                     // save to file
                     if (!FilenameUtils.getExtension(file.getName()).equalsIgnoreCase("fm")) {
                         file = new File(file.toString() + ".fm");
@@ -227,6 +240,11 @@ public class FindingMovieUI extends JFrame {
                             e1.printStackTrace();
                         }
                         JOptionPane.showMessageDialog(FindingMovieUI.this, "Saved : " + file.getAbsolutePath());
+                        //analytics
+                        AnalyticsUtil.notifyEvent(AnalyticsUtil.EventType.SAVE);
+                        //add to recent list
+                        PreferenceUtil.addPreferenceListItem(PreferenceUtil.PreferenceKey.RECENT_FILES, file.getAbsolutePath());
+                        populateRecentItems();
                     } catch (Exception e1) {
                         JOptionPane.showMessageDialog(FindingMovieUI.this, "Error occurred while saving the file");
                         e1.printStackTrace();
@@ -240,35 +258,15 @@ public class FindingMovieUI extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fc = new JFileChooser();
-                String userDir = System.getProperty("user.home");
-                fc.setCurrentDirectory(new java.io.File(userDir)); // start at application current directory
+                fc.setCurrentDirectory(new java.io.File(PreferenceUtil.getPreference(PreferenceUtil.PreferenceKey.LAST_OPENED_FILE_LOCATION, "."))); // start at application current directory
                 fc.setFileSelectionMode(JFileChooser.FILES_ONLY);
                 FileNameExtensionFilter filter = new FileNameExtensionFilter("SAVED SEARCHES", "fm", "text");
                 fc.setFileFilter(filter);
                 int returnVal = fc.showDialog(FindingMovieUI.this, "Select Saved Result");
                 if(returnVal == JFileChooser.APPROVE_OPTION) {
                     File file = fc.getSelectedFile();
-                    try {
-                        JsonReader reader = new JsonReader(new FileReader(file.getAbsolutePath()));
-                        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-                        java.util.List<MediaItem> mediaItemListTemp = gson.fromJson(reader, new TypeToken<List<MediaItem>>() {
-                        }.getType());
-                        resultView.clearResultView();
-                        ignoredView.clearResultView();
-                        if (mediaItemListTemp != null) {
-                            for (MediaItem mediaItem : mediaItemListTemp) {
-                                try {
-                                    mediaItem.setFile(new File(mediaItem.getFileLocation()));
-                                    resultView.addMediaItem(mediaItem);
-                                } catch (Exception ex) {
-                                    ex.printStackTrace();
-                                }
-                            }
-                        }
-                    }catch (Exception ex){
-                        JOptionPane.showMessageDialog(FindingMovieUI.this, "Error occurred while opening the file");
-                        ex.printStackTrace();
-                    }
+                    PreferenceUtil.updatePreference(PreferenceUtil.PreferenceKey.LAST_OPENED_FILE_LOCATION, file.getParentFile().getAbsolutePath());
+                    openFile(file);
                 }
 
             }
@@ -281,6 +279,52 @@ public class FindingMovieUI extends JFrame {
             }
         });
 
+        //analytics
+        AnalyticsUtil.notifyEvent(AnalyticsUtil.EventType.OPEN_APP);
+    }
+
+    private void populateRecentItems(){
+        recentItemsMenu.removeAll();
+        List<String> recentItems = PreferenceUtil.getPreferenceAsStrList(PreferenceUtil.PreferenceKey.RECENT_FILES);
+        for(String item : recentItems){
+            recentItemsMenu.add(item).addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    File file = new File(e.getActionCommand());
+                    openFile(file);
+                }
+            });
+        };
+    }
+
+    private void openFile(File file){
+        try {
+            JsonReader reader = new JsonReader(new FileReader(file.getAbsolutePath()));
+            Gson gson = new GsonBuilder().setPrettyPrinting().create();
+            java.util.List<MediaItem> mediaItemListTemp = gson.fromJson(reader, new TypeToken<List<MediaItem>>() {
+            }.getType());
+            resultView.clearResultView();
+            ignoredView.clearResultView();
+            if (mediaItemListTemp != null) {
+                for (MediaItem mediaItem : mediaItemListTemp) {
+                    try {
+                        mediaItem.setFile(new File(mediaItem.getFileLocation()));
+                        resultView.addMediaItem(mediaItem);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            }
+            JOptionPane.showMessageDialog(FindingMovieUI.this, "Opened : " + file.getAbsolutePath());
+            //analytics
+            AnalyticsUtil.notifyEvent(AnalyticsUtil.EventType.OPEN);
+            //add to recent list
+            PreferenceUtil.addPreferenceListItem(PreferenceUtil.PreferenceKey.RECENT_FILES, file.getAbsolutePath());
+            populateRecentItems();
+        }catch (Exception ex){
+            JOptionPane.showMessageDialog(FindingMovieUI.this, "Error occurred while opening the file");
+            ex.printStackTrace();
+        }
     }
 
     private void startFinding(final String filePath, final ResultView resultView){
@@ -289,6 +333,9 @@ public class FindingMovieUI extends JFrame {
 
             @Override
             protected Object doInBackground() throws Exception {
+                //analytics
+                AnalyticsUtil.notifyEvent(AnalyticsUtil.EventType.SEARCH_START);
+                //continue
                 resultView.clearResultView();
                 ignoredView.clearResultView();
                 progressArea.setVisible(Boolean.TRUE);
@@ -322,6 +369,8 @@ public class FindingMovieUI extends JFrame {
                 browseBtn.setEnabled(Boolean.TRUE);
                 progressArea.getCancelBtn().setEnabled(Boolean.FALSE);
                 progressArea.setVisible(Boolean.FALSE);
+                //analytics
+                AnalyticsUtil.notifyEvent(AnalyticsUtil.EventType.SEARCH_END);
                 return null;
             }
 
