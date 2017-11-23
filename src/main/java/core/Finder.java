@@ -67,6 +67,7 @@ public class Finder {
         int failedCount = 0;
         for(File mediaFile : collectedMediaFiles){
             double fileSize = FileUtils.getFileSizeInMB(mediaFile);
+            System.out.println("Fetching : " + mediaFile.getAbsolutePath());
             if(!stopFlag) {
                 if(fileSize >= MIN_SIZE_MB) {
                     String fileName = mediaFile.getName();
@@ -117,16 +118,8 @@ public class Finder {
     }
 
     private Map<String, String> fetchMovieInfo(String cleanedName, Integer cleanedYear){
-        Map<String, String> infoMap = new HashMap<String, String>();
-        if (cleanedName != null && !cleanedName.isEmpty()) {
-            String response = RestUtils.makeRestCall("http://www.omdbapi.com/?t="
-                    + cleanedName.replace(" ", "+") + (cleanedYear != null ? "&y=" + cleanedYear : "") + "&plot=short&r=json");
-            infoMap = RestUtils.convertResponseToMap(response);
-        }else {
-            infoMap.put("Response", "False");
-            infoMap.put("Reason", "Couldn't extract movie name from file");
-        }
-        return infoMap;
+        MovieDataAPI movieDataAPI = new OMDBImpl();
+        return movieDataAPI.fetchMovieInfo(cleanedName, cleanedYear);
     }
 
     public void cancelFind(){

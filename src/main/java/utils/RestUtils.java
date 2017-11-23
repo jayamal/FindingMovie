@@ -76,8 +76,12 @@ public class RestUtils {
 
     public static Map<String, String> convertResponseToMap(String response){
         Type type = new TypeToken<Map<String, String>>(){}.getType();
+        return (Map<String, String>)convertResponseToObject(response, type);
+    }
+
+    public static Object convertResponseToObject(String response, Type type){
         Gson gson = new Gson();
-        Map<String, String> responseMap = gson.fromJson(response, type);
+        Object responseMap = gson.fromJson(response, type);
         return responseMap;
     }
 

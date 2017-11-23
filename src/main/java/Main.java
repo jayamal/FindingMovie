@@ -27,6 +27,7 @@ import uis.FindingMovieUI;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.InputStream;
 import java.util.Properties;
 
 /**
@@ -36,6 +37,7 @@ public class Main {
 
     public static void main(String[] args){
         System.setProperty("java.net.useSystemProxies", "true");
+        InputStream stream = null;
         try {
             // select Look and Feel
             Properties props = new Properties();

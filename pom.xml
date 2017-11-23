@@ -77,6 +77,23 @@
             <artifactId>gson</artifactId>
             <version>2.7</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/net.coderazzi/tablefilter-swing -->
+        <dependency>
+            <groupId>net.coderazzi</groupId>
+            <artifactId>tablefilter-swing</artifactId>
+            <version>5.3.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.omertron/themoviedbapi -->
+        <dependency>
+            <groupId>com.omertron</groupId>
+            <artifactId>themoviedbapi</artifactId>
+            <version>4.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>1.8.0-alpha2</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -24,6 +24,9 @@
 
 package uis.results;
 
+import net.coderazzi.filters.gui.AutoChoices;
+import net.coderazzi.filters.gui.TableFilterHeader;
+
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
@@ -59,7 +62,7 @@ public class InfoTable extends JTable {
                 setForeground(table.getForeground());
             }
 
-            setText(value.toString());
+            setText(value != null ? value.toString() : "");
             setBorder(padding);
             return this;
         }
@@ -67,13 +70,18 @@ public class InfoTable extends JTable {
 
     public static void updateRowHeights(int column, int width, JTable table){
         for (int row = 0; row < table.getRowCount(); row++) {
-            int rowHeight = table.getRowHeight();
-            Component comp = table.prepareRenderer(table.getCellRenderer(row, column), row, column);
-            Dimension d = comp.getPreferredSize();
-            comp.setSize(new Dimension(width, d.height));
-            d = comp.getPreferredSize();
-            rowHeight = Math.max(rowHeight, d.height);
-            table.setRowHeight(row, rowHeight);
+            try {
+                int rowHeight = table.getRowHeight();
+                Component comp = table.prepareRenderer(table.getCellRenderer(row, column), row, column);
+                Dimension d = comp.getPreferredSize();
+                comp.setSize(new Dimension(width, d.height));
+                d = comp.getPreferredSize();
+                rowHeight = Math.max(rowHeight, d.height);
+                table.setRowHeight(row, rowHeight);
+            }catch (Exception ex){
+                ex.printStackTrace();
+            }
+
         }
     }
 
@@ -114,6 +122,8 @@ public class InfoTable extends JTable {
         // initial update of row heights
         TableColumn c = getColumnModel().getColumn(1);
         updateRowHeights(1, c.getWidth(), this);
+
+        TableFilterHeader filterHeader = new TableFilterHeader(this, AutoChoices.ENABLED);
     }
 
     abstract class ColumnListener extends MouseAdapter implements TableColumnModelListener {
